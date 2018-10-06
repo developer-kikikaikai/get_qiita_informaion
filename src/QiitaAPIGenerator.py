@@ -2,7 +2,7 @@ import traceback, sys, json
 from QiitaAPINull import QiitaAPINull
 from QiitaAPIv2 import QiitaAPIv2
 
-class QiitaAPIGenerater:
+class QiitaAPIGenerator:
 	#コンストラクタ。設定ファイルからversionとdata情報を読み込む
 	def __init__(self,confpath):
 		try:
