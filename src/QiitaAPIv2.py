@@ -23,15 +23,16 @@ class QiitaAPIv2(QiitaAPI):
 	#private
 	def _parse_setting(self, data):
 		self._access_token = data['access_token']
+		self._owndata={}
+		self._headers={}
 		if not 'get_owndata' in data or data['get_owndata'] != "yes":
 			#自情報がいらないなら終了
 			return
 
 		#基本情報(自身の記事のitem, title)は取得してしまう
-		self._headers={'Authorization': f'Bearer {data["access_token"]}'}
+		self._headers['Authorization']=f'Bearer {data["access_token"]}'
 		page=data['item_count']
 		owndata=self._get_api_response_body(f'authenticated_user/items?page=1&per_page={page}')
-		self._owndata={}
 		#必要な要素だけ取り出す。
 		for itemdetail in owndata:
 			#id毎に{'titlle', 'view', 'like', 'stock'}を設定する準備をしておく
