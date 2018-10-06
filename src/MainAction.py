@@ -1,3 +1,4 @@
+import sys, json
 from QiitaAPIGenerator import QiitaAPIGenerator
 
 class MainAction:
@@ -10,7 +11,6 @@ class MainAction:
 		#オプション:{itemがあってもいいか？, 対応するクラス名}
 		self._opt_table={
 							'all'  :{self.PARAM_TAG_ITEM:True, self.PARAM_TAG_CLASS:'ActionShowAll'},
-							'html' :{self.PARAM_TAG_ITEM:False,self.PARAM_TAG_CLASS:'ActionOutputHtml'},
 							'view' :{self.PARAM_TAG_ITEM:True, self.PARAM_TAG_CLASS:'ActionShowView'},
 							'stock':{self.PARAM_TAG_ITEM:True, self.PARAM_TAG_CLASS:'ActionShowStock'},
 							'like' :{self.PARAM_TAG_ITEM:True, self.PARAM_TAG_CLASS:'ActionShowLike'},
@@ -20,6 +20,10 @@ class MainAction:
 
 	def action(self):
 		self._config[self.PARAM_TAG_ACTOR].action(self._config['param'])
+
+	@classmethod
+	def show(self, data):
+		print(json.dumps(data, ensure_ascii=False, indent=4))
 
 	def _parse_arg(self,args):
 		config={'param':{}}
@@ -44,7 +48,6 @@ class ActionShowUsage:
 		print("Usage: python3.6 main.py conf_path [option]")
 		print("option:")
 		print(" all: 自身の記事情報一覧をJson形式で表示します。")
-		print(" html: html形式で、自身の記事情報一覧を出力します。")
 		print(" view itemid: 指定されたitem idの閲覧数を表示します。")
 		print(" stock itemid: 指定されたitem idのストック数を表示します。")
 		print(" like itemid: 指定されたitem idのいいね数を表示します。")
@@ -55,23 +58,19 @@ class ActionShowAll:
 	def action(self, parameter):
 		#itemidがあるならそのitemのみ表示
 		if MainAction.PARAM_TAG_ITEM in parameter:
-			print(parameter[MainAction.PARAM_TAG_GEN].get_all_data_related_to_item(parameter[MainAction.PARAM_TAG_ITEM]))
+			MainAction.show(parameter[MainAction.PARAM_TAG_GEN].get_all_data_related_to_item(parameter[MainAction.PARAM_TAG_ITEM]))
 		#他は全表示
 		else:
-			print(parameter[MainAction.PARAM_TAG_GEN].get_own_all_data())
-
-class ActionOutputHtml:
-	def action(self, generator):
-		print("Not implement yet")
+			MainAction.show(parameter[MainAction.PARAM_TAG_GEN].get_own_all_data())
 
 class ActionShowView:
 	def action(self, parameter):
-		print(parameter[MainAction.PARAM_TAG_GEN].get_view(parameter[MainAction.PARAM_TAG_ITEM]))
+		MainAction.show(parameter[MainAction.PARAM_TAG_GEN].get_view(parameter[MainAction.PARAM_TAG_ITEM]))
 
 class ActionShowStock:
 	def action(self, parameter):
-		print(parameter[MainAction.PARAM_TAG_GEN].get_stock(parameter[MainAction.PARAM_TAG_ITEM]))
+		MainAction.show(parameter[MainAction.PARAM_TAG_GEN].get_stock(parameter[MainAction.PARAM_TAG_ITEM]))
 
 class ActionShowLike:
 	def action(self, parameter):
-		print(parameter[MainAction.PARAM_TAG_GEN].get_like(parameter[MainAction.PARAM_TAG_ITEM]))
+		MainAction.show(parameter[MainAction.PARAM_TAG_GEN].get_like(parameter[MainAction.PARAM_TAG_ITEM]))
