@@ -1,0 +1,8 @@
+{
+	"api_ver":2,
+	"data":{
+		"get_owndata":"yes",
+		"access_token":"PleaseWriteYourAccessToken",
+		"item_count":100
+	}
+}
