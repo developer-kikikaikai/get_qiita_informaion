@@ -1,0 +1,16 @@
+{
+	"api_ver":2,
+	"max":20,
+	"data":{
+		"show":{
+			"item":{
+				"page":1,
+				"per_page":20,
+				"title":true,
+				"html":true,
+				"tags":false,
+				"like":false
+			}
+		}
+	}
+}
