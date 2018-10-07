@@ -20,8 +20,10 @@ class QiitaAPIv2(QiitaAPI):
 	API_PROP_UPDATE_TIME='updated_at'
 	API_PROP_PAGE='page'
 	API_PROP_PER_PAGE='per_page'
-	#stockだけはstockersの要素数をカウントする
+	#stockはstockersの要素数をカウントする
 	API_PROP_STOCK='stock'
+	#stockはcommentsの要素数をカウントする
+	API_PROP_COMMENT='comment'
 
 	#1回の取得データ最大数の制限
 	DEFAULT_RESULT_MAX=5000
@@ -94,7 +96,8 @@ class QiitaAPIv2(QiitaAPI):
 					self.API_PROP_VIEW:		{self.MNG_PROP_SHOW:False, self.MNG_PROP_HAVE_LIST:False, self.MNG_PROP_API_PROP:QiitaAPI.ITEM_VIEW},
 					self.API_PROP_USER:		{self.MNG_PROP_SHOW:False, self.MNG_PROP_HAVE_LIST:True, self.MNG_PROP_API_PROP:QiitaAPI.ITEM_USER},
 					self.API_PROP_LIKE:		{self.MNG_PROP_SHOW:False, self.MNG_PROP_HAVE_LIST:True , self.MNG_PROP_API_PROP:QiitaAPI.ITEM_LIKE},
-					self.API_PROP_STOCK:	{self.MNG_PROP_SHOW:False, self.MNG_PROP_HAVE_LIST:False, self.MNG_PROP_API_PROP:QiitaAPI.ITEM_STOCK}
+					self.API_PROP_STOCK:	{self.MNG_PROP_SHOW:False, self.MNG_PROP_HAVE_LIST:False, self.MNG_PROP_API_PROP:QiitaAPI.ITEM_STOCK},
+					self.API_PROP_COMMENT:	{self.MNG_PROP_SHOW:False, self.MNG_PROP_HAVE_LIST:False, self.MNG_PROP_API_PROP:QiitaAPI.ITEM_COMMENT}
 				}
 		}
 
@@ -285,9 +288,16 @@ class QiitaAPIv2(QiitaAPI):
 
 	def _get_stock(self, item):
 		#stockはstockersから
-		#stockのqueryはユーザー情報に依存
+		#stockのqueryはユーザー情報に依存(いらないかも)
 		query=f'page={self._user_config[self.API_PROP_PAGE]}&per_page={self._user_config[self.API_PROP_PER_PAGE]}'
 		res=self._get_api_response_all(f'items/{item}/stockers?${query}', False)
+		return res[self.HTTP_PROP_HEADER][self.HTTP_PROP_COUNT]
+
+	def _get_comment(self, item):
+		#commentはcommentsから
+		#commentのqueryはユーザー情報に依存(いらないかも)
+		query=f'page={self._user_config[self.API_PROP_PAGE]}&per_page={self._user_config[self.API_PROP_PER_PAGE]}'
+		res=self._get_api_response_all(f'items/{item}/comments?${query}', False)
 		return res[self.HTTP_PROP_HEADER][self.HTTP_PROP_COUNT]
 
 	def _get_extra_item_data(self, item_config, item):
@@ -295,6 +305,10 @@ class QiitaAPIv2(QiitaAPI):
 			return self._get_views(item)
 		elif item_config[self.MNG_PROP_API_PROP] == QiitaAPI.ITEM_STOCK:
 			return self._get_stock(item)
+		elif item_config[self.MNG_PROP_API_PROP] == QiitaAPI.ITEM_COMMENT:
+			return self._get_comment(item)
+		else:
+			return None
 
 	def _parse_result(self, item_config, raw_result):
 		if item_config[self.MNG_PROP_API_PROP] == QiitaAPI.ITEM_USER:
@@ -309,6 +323,13 @@ class QiitaAPIv2(QiitaAPI):
 		return config[key][self.MNG_PROP_SHOW]
 
 	def _parse_raw_item(self, itemid, itemdetail):
+		#stock情報を追加しておく
+		if self._item_config[self.CONF_PROP_ITEM][self.API_PROP_STOCK][self.MNG_PROP_SHOW]:
+			itemdetail[self.API_PROP_STOCK]=None
+		#comment情報を追加しておく
+		if self._item_config[self.CONF_PROP_ITEM][self.API_PROP_COMMENT][self.MNG_PROP_SHOW]:
+			itemdetail[self.API_PROP_COMMENT]=None
+
 		response={}
 		for key, value in itemdetail.items():
 			#非表示データはスキップ
@@ -321,7 +342,11 @@ class QiitaAPIv2(QiitaAPI):
 				response[this_item_config[self.MNG_PROP_API_PROP]]=self._parse_result(this_item_config, value)
 			#それ以外は取得しなおし
 			else:
-				response[this_item_config[self.MNG_PROP_API_PROP]]=self._get_extra_item_data(this_item_config, itemid)
+				#Noneなら取り直し、それ以外はそのまま
+				if value == None:
+					response[this_item_config[self.MNG_PROP_API_PROP]]=self._get_extra_item_data(this_item_config, itemid)
+				else:
+					response[this_item_config[self.MNG_PROP_API_PROP]]=value
 		return response
 
 	def _parse_raw_user(self, raw_data):
@@ -346,9 +371,6 @@ class QiitaAPIv2(QiitaAPI):
 		response={}
 		for itemdetail in raw_data:
 			itemid=itemdetail[self.API_PROP_ITEMID]
-			#stock情報を追加しておく
-			if self._item_config[self.CONF_PROP_ITEM][self.API_PROP_STOCK][self.MNG_PROP_SHOW]:
-				itemdetail[self.API_PROP_STOCK]=0
 			response[itemid]=self._parse_raw_item(itemid, itemdetail)
 		return response
 

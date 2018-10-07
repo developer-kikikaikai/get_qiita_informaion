@@ -17,6 +17,7 @@ class QiitaAPI(metaclass=ABCMeta):
 	ITEM_VIEW='views'
 	ITEM_LIKE='like'
 	ITEM_STOCK='stock'
+	ITEM_COMMENT='comment'
 	#user向け
 	USER_ID='id'
 	#内部向け共通定義

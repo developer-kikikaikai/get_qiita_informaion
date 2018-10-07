@@ -39,6 +39,8 @@
 				"views":true,
 				"//stock":"stock数。デフォルトはfalse。trueにするとアクセス数が増加し重くなります。(viewsと別のURLアクセス)",
 				"stock":true,
+				"//comment":"comment数。デフォルトはfalse。trueにするとアクセス数が増加し重くなります。(viewsと別のURLアクセス)",
+				"comment":true,
 				"//user":"user情報。デフォルトはfalse。表示内容はuserの設定に依存します。)",
 				"user":true
 			},
