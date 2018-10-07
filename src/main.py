@@ -1,9 +1,9 @@
 #!/usr/bin/python3.6
 import sys
-from MainAction import MainAction
+from QiitaAPIMain import QiitaAPIMain
 
 def main(args):
-	main_instance=MainAction(args)
+	main_instance=QiitaAPIMain(args)
 	main_instance.action()
 
 if __name__ == '__main__':

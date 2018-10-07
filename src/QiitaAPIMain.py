@@ -1,7 +1,7 @@
 import sys, json
 from QiitaAPIGenerator import QiitaAPIGenerator
 
-class MainAction:
+class QiitaAPIMain:
 	PARAM_PROP_GEN='generator'
 	PARAM_PROP_ACTOR='actor'
 	PARAM_PROP_ITEM='item'
@@ -76,28 +76,28 @@ class ActionShowUsage:
 		print("Usage: python3.6 main.py conf_path [option]")
 		print("option:")
 		for option, data in parameter.items():
-			print(f" #{option}: #{data[MainAction.PARAM_PROP_USAGE]}")
+			print(f" #{option}: #{data[QiitaAPIMain.PARAM_PROP_USAGE]}")
 
 class ActionShowAll:
 	def action(self, parameter):
-		api=parameter[MainAction.PARAM_PROP_GEN]
+		api=parameter[QiitaAPIMain.PARAM_PROP_GEN]
 		if api.has_user():
-			MainAction.show(api.get_user_items())
+			QiitaAPIMain.show(api.get_user_items())
 		else:
-			MainAction.show(api.get_items())
+			QiitaAPIMain.show(api.get_items())
 
 class ActionShowUserItems:
 	def action(self, parameter):
-		MainAction.show(parameter[MainAction.PARAM_PROP_GEN].get_user_items())
+		QiitaAPIMain.show(parameter[QiitaAPIMain.PARAM_PROP_GEN].get_user_items())
 
 class ActionShowItems:
 	def action(self, parameter):
-		MainAction.show(parameter[MainAction.PARAM_PROP_GEN].get_items())
+		QiitaAPIMain.show(parameter[QiitaAPIMain.PARAM_PROP_GEN].get_items())
 
 class ActionShowItem:
 	def action(self, parameter):
 		#itemidがあるならそのitemのみ表示
 		#try:
-			MainAction.show(parameter[MainAction.PARAM_PROP_GEN].get_item(parameter[MainAction.PARAM_PROP_ITEM]))
+			QiitaAPIMain.show(parameter[QiitaAPIMain.PARAM_PROP_GEN].get_item(parameter[QiitaAPIMain.PARAM_PROP_ITEM]))
 		#except:
 		#	print("Please set valid item")

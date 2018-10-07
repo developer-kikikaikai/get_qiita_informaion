@@ -37,6 +37,11 @@ class QiitaAPIv2(QiitaAPI):
 	MNG_PROP_SHOW='show'
 	MNG_PROP_HAVE_LIST='have_list'
 	MNG_PROP_API_PROP='property'
+	#http header parse
+	HTTP_PROP_HEADER='header'
+	HTTP_PROP_LINK='Link'
+	HTTP_PROP_COUNT='Total-Count'
+	HTTP_PROP_BODY='body'
 
 	#private
 	def _parse_setting(self, data):
@@ -155,8 +160,16 @@ class QiitaAPIv2(QiitaAPI):
 	#get response body
 	def _get_api_response_body(self, extraurl):
 		res=self._callapi(extraurl)
+		#print(res.headers)
 		res_body=json.loads(res.text)
 		return res_body
+
+	#get response all
+	def _get_api_response_all(self, extraurl):
+		res=self._callapi(extraurl)
+		res_all={self.HTTP_PROP_HEADER:res.headers}
+		res_all[self.HTTP_PROP_BODY]=json.loads(res.text)
+		return res_all
 
 	#qiita api call
 	def _callapi(self, extraurl):
@@ -211,8 +224,8 @@ class QiitaAPIv2(QiitaAPI):
 		#stockはstockersから
 		#stockのqueryはユーザー情報に依存
 		query=f'page={self._user_config[self.API_PROP_PAGE]}&per_page={self._user_config[self.API_PROP_PER_PAGE]}'
-		res=self._get_api_response_body(f'items/{item}/stockers?${query}')
-		return len(res)
+		res=self._get_api_response_all(f'items/{item}/stockers?${query}')
+		return res[self.HTTP_PROP_HEADER][self.HTTP_PROP_COUNT]
 
 	def _get_extra_item_data(self, item_config, item):
 		if item_config[self.MNG_PROP_API_PROP] == QiitaAPI.ITEM_VIEW:
@@ -270,6 +283,9 @@ class QiitaAPIv2(QiitaAPI):
 		response={}
 		for itemdetail in raw_data:
 			itemid=itemdetail[self.API_PROP_ITEMID]
+			#stock情報を追加しておく
+			if self._item_config[self.CONF_PROP_ITEM][self.API_PROP_STOCK][self.MNG_PROP_SHOW]:
+				itemdetail[self.API_PROP_STOCK]=0
 			response[itemid]=self._parse_raw_item(itemid, itemdetail)
 		return response
 
@@ -303,7 +319,6 @@ class QiitaAPIv2(QiitaAPI):
 	# @ret dict of {itemid:{'titlle', other(related to conf}
 	def get_item(self, item):
 		#userの記事一覧の取得
-		return {}
 		raw_data = self._get_item_by_api(item)
 		#raw指定ならそのまま返却
 		if self._item_config[QiitaAPI.ITEM_RAW]:
