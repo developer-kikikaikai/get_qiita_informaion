@@ -1,14 +1,34 @@
 #Qiita APIのインターフェース定義
 from abc import ABCMeta
 
-DEF_TITLE='title'
-DEF_VIEW='view'
-DEF_LIKE='like'
-DEF_STOCK='stock'
-
 class QiitaAPI(metaclass=ABCMeta):
 
+	#応答のオブジェクトで利用されるタグ定義
+	#item向け
+	ITEM_RAW='raw'
+	ITEM_TITLE='title'
+	ITEM_USER='user'
+	ITEM_URL='url'
+	ITEM_TAGS='tags'
+	ITEM_MARKDOWN_DATA='markdown'
+	ITEM_HTML_DATA='html'
+	ITEM_CREATED_AT='created_at'
+	ITEM_UPDATED_AT='update_at'
+	ITEM_VIEW='views'
+	ITEM_LIKE='like'
+	ITEM_STOCK='stock'
+	#user向け
+	USER_ID='id'
+	#内部向け共通定義
+	#confの共通設定
+	COMMON_VERSION='api_ver'
+	COMMON_DATA='data'
+	COMMON_USER='user'
+	
 	def __init__(self, data):
+		print("user")
+		#user dataがあるかどうかは覚えておく
+		self._has_user_data = 'user' in data
 		self._parse_setting(data)
 
 	#private
@@ -17,38 +37,23 @@ class QiitaAPI(metaclass=ABCMeta):
 		pass
 
 	#public
-	# 自分のアカウントのitemsを取得する。
-	# @ret list of items
+	def has_user(self):
+		return self._has_user_data
+
+	# itemsを取得する。
+	# @ret dict of {itemid:{'titlle', other(related to conf}}
 	#@abstractmethod
-	def get_own_items(self):
+	def get_items(self):
 		pass
 
-	# 自分のアカウントの全情報を取得する
-	# @ret dict of {itemid:{'titlle', 'view', 'like', 'stock'}}
+	# アカウントの全情報を取得する
+	# @ret dict of {itemid:{'titlle', other(related to conf}}
 	#@abstractmethod
-	def get_own_all_data(self):
+	def get_user_items(self):
 		pass
 
-	# itemの閲覧数を取得する
-	# @ret {title, 閲覧数}
+	# item情報を取得する
+	# @ret dict of {itemid:{'titlle', other(related to conf}
 	#@abstractmethod
-	def get_view(self, item):
-		pass
-
-	# ストック数を取得する
-	# @ret {title, ストック数}
-	#@abstractmethod
-	def get_stock(self, item):
-		pass
-
-	# いいね数を取得する
-	# @ret {title, いいね数}
-	#@abstractmethod
-	def get_like(self, item):
-		pass
-
-	# 特定記事の全情報を取得する
-	# @ret {title, いいね数, ストック数, 閲覧数}
-	#@abstractmethod
-	def get_all_data_related_to_item(self, item):
+	def get_item(self, item):
 		pass

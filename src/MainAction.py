@@ -2,75 +2,102 @@ import sys, json
 from QiitaAPIGenerator import QiitaAPIGenerator
 
 class MainAction:
-	PARAM_TAG_GEN='generator'
-	PARAM_TAG_ACTOR='actor'
-	PARAM_TAG_ITEM='item'
-	PARAM_TAG_CLASS='class'
+	PARAM_PROP_GEN='generator'
+	PARAM_PROP_ACTOR='actor'
+	PARAM_PROP_ITEM='item'
+	PARAM_PROP_CLASS='class'
+	PARAM_PROP_USAGE='usage'
+	CONF_PROP_PARAM='param'
 
 	def __init__(self,args):
 		#オプション:{itemがあってもいいか？, 対応するクラス名}
 		self._opt_table={
-							'all'  :{self.PARAM_TAG_ITEM:True, self.PARAM_TAG_CLASS:'ActionShowAll'},
-							'view' :{self.PARAM_TAG_ITEM:True, self.PARAM_TAG_CLASS:'ActionShowView'},
-							'stock':{self.PARAM_TAG_ITEM:True, self.PARAM_TAG_CLASS:'ActionShowStock'},
-							'like' :{self.PARAM_TAG_ITEM:True, self.PARAM_TAG_CLASS:'ActionShowLike'},
-							'default' :{self.PARAM_TAG_ITEM:False,  self.PARAM_TAG_CLASS:'ActionShowUsage'}
+							'all'  :{
+									self.PARAM_PROP_ITEM:False,
+									self.PARAM_PROP_CLASS:'ActionShowAll',
+									self.PARAM_PROP_USAGE:"記事情報一覧をJson形式で表示します。confファイルのdataフィールドにuserが指定されている場合はそのユーザー情報を表示します。指定がない場合は最新記事を表示します。"
+							},
+							'items' :{
+									self.PARAM_PROP_ITEM:False,
+									self.PARAM_PROP_CLASS:'ActionShowItems',
+									self.PARAM_PROP_USAGE:"最新記事情報一覧をJson形式で表示します。表示対象はconfファイルに依存します。"
+							},
+							'user_items' :{
+									self.PARAM_PROP_ITEM:False,
+									self.PARAM_PROP_CLASS:'ActionShowUserItems',
+									self.PARAM_PROP_USAGE:"指定ユーザーの記事情報一覧をJson形式で表示します。表示対象はconfファイルに依存します。指定がない場合はv2ではaccess_tokenの設定されたユーザーが対象になり、不正なtokenはエラー扱いです。"
+							},
+							'item' :{
+									self.PARAM_PROP_ITEM:True,
+									self.PARAM_PROP_CLASS:'ActionShowItem',
+									self.PARAM_PROP_USAGE:"指定されたitem idの情報をJson形式で表示します。表示対象はconfファイルに依存します。",
+							},
+							'other' :{
+									self.PARAM_PROP_ITEM:False,
+									self.PARAM_PROP_CLASS:'ActionShowUsage',
+									self.PARAM_PROP_USAGE:"利用方法(この表示)が表示されます"
+							}
 						}
 		self._config=self._parse_arg(args)
 
 	def action(self):
-		self._config[self.PARAM_TAG_ACTOR].action(self._config['param'])
+		self._config[self.PARAM_PROP_ACTOR].action(self._config[self.CONF_PROP_PARAM])
 
 	@classmethod
 	def show(self, data):
 		print(json.dumps(data, ensure_ascii=False, indent=4))
 
 	def _parse_arg(self,args):
-		config={'param':{}}
+		config={self.CONF_PROP_PARAM:{}}
 		if len(args) < 3 or not args[2] in self._opt_table:
 			#default
-			key='default'
+			key='other'
 		else:
 			#generatorの作成
-			config['param'][self.PARAM_TAG_GEN]=QiitaAPIGenerator(args[1]).get_qiita_api()
-			key=args[2]
-	
-		if self._opt_table[key] and 3 < len(args):
-			config['param'][self.PARAM_TAG_ITEM]=args[3]
+			config[self.CONF_PROP_PARAM][self.PARAM_PROP_GEN]=QiitaAPIGenerator(args[1]).get_qiita_api()
+			#confにuser情報があるか？
 
-		classname=self._opt_table[key][self.PARAM_TAG_CLASS]
-		#globalsでクラス名と対応するクラス定義を取得。
-		config[self.PARAM_TAG_ACTOR]=globals()[classname]()
+			key=args[2]
+		#itemidを設定するケース
+		if self._opt_table[key] and 3 < len(args):
+			config[self.CONF_PROP_PARAM][self.PARAM_PROP_ITEM]=args[3]
+
+		#help文言を設定
+		if key is 'other':
+			config[self.CONF_PROP_PARAM]=self._opt_table
+
+		#クラス名からglobalsで対応するクラス定義を取得。
+		classname=self._opt_table[key][self.PARAM_PROP_CLASS]
+		config[self.PARAM_PROP_ACTOR]=globals()[classname]()
 		return config
 
 class ActionShowUsage:
 	def action(self, parameter):
 		print("Usage: python3.6 main.py conf_path [option]")
 		print("option:")
-		print(" all: 自身の記事情報一覧をJson形式で表示します。")
-		print(" view itemid: 指定されたitem idの閲覧数を表示します。")
-		print(" stock itemid: 指定されたitem idのストック数を表示します。")
-		print(" like itemid: 指定されたitem idのいいね数を表示します。")
-		print(" all itemid: 指定されたitem idの閲覧数、ストック数、いいね数を表示します。")
-		print(" その他: 利用方法(この表示)がされます")
+		for option, data in parameter.items():
+			print(f" #{option}: #{data[MainAction.PARAM_PROP_USAGE]}")
 
 class ActionShowAll:
 	def action(self, parameter):
-		#itemidがあるならそのitemのみ表示
-		if MainAction.PARAM_TAG_ITEM in parameter:
-			MainAction.show(parameter[MainAction.PARAM_TAG_GEN].get_all_data_related_to_item(parameter[MainAction.PARAM_TAG_ITEM]))
-		#他は全表示
+		api=parameter[MainAction.PARAM_PROP_GEN]
+		if api.has_user():
+			MainAction.show(api.get_user_items())
 		else:
-			MainAction.show(parameter[MainAction.PARAM_TAG_GEN].get_own_all_data())
+			MainAction.show(api.get_items())
 
-class ActionShowView:
+class ActionShowUserItems:
 	def action(self, parameter):
-		MainAction.show(parameter[MainAction.PARAM_TAG_GEN].get_view(parameter[MainAction.PARAM_TAG_ITEM]))
+		MainAction.show(parameter[MainAction.PARAM_PROP_GEN].get_user_items())
 
-class ActionShowStock:
+class ActionShowItems:
 	def action(self, parameter):
-		MainAction.show(parameter[MainAction.PARAM_TAG_GEN].get_stock(parameter[MainAction.PARAM_TAG_ITEM]))
+		MainAction.show(parameter[MainAction.PARAM_PROP_GEN].get_items())
 
-class ActionShowLike:
+class ActionShowItem:
 	def action(self, parameter):
-		MainAction.show(parameter[MainAction.PARAM_TAG_GEN].get_like(parameter[MainAction.PARAM_TAG_ITEM]))
+		#itemidがあるならそのitemのみ表示
+		#try:
+			MainAction.show(parameter[MainAction.PARAM_PROP_GEN].get_item(parameter[MainAction.PARAM_PROP_ITEM]))
+		#except:
+		#	print("Please set valid item")
