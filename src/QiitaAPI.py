@@ -26,7 +26,6 @@ class QiitaAPI(metaclass=ABCMeta):
 	COMMON_USER='user'
 	
 	def __init__(self, data):
-		print("user")
 		#user dataがあるかどうかは覚えておく
 		self._has_user_data = 'user' in data
 		self._parse_setting(data)

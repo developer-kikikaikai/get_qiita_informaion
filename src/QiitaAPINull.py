@@ -2,7 +2,7 @@ from QiitaAPI import *
 
 class QiitaAPINull(QiitaAPI):
 	def _parse_setting(self, data):
-		print("This version is not support!")
+		print("{'err':'This version is not support!'}")
 		return
 
 	def get_items(self):

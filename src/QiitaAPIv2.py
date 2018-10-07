@@ -47,7 +47,6 @@ class QiitaAPIv2(QiitaAPI):
 	def _parse_setting(self, data):
 		#デフォルトを設定
 		self._set_default()
-		print(json.dumps(self._item_config, ensure_ascii=False, indent=4))
 
 		#認証設定
 		if self.CONF_PROP_TOKEN in data:
@@ -67,8 +66,6 @@ class QiitaAPIv2(QiitaAPI):
 
 		#user関連の設定更新
 		self._set_user_config(data[self.MNG_PROP_SHOW])
-
-		print(json.dumps(self._item_config, ensure_ascii=False, indent=4))
 
 	#デフォルト設定を行う
 	def _set_default(self):

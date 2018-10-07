@@ -73,10 +73,13 @@ class QiitaAPIMain:
 
 class ActionShowUsage:
 	def action(self, parameter):
-		print("Usage: python3.6 main.py conf_path [option]")
-		print("option:")
+		usage={}
+		usage['Usage']='python3.6 main.py conf_path [option]'
+		usage['option']={}
 		for option, data in parameter.items():
-			print(f" #{option}: #{data[QiitaAPIMain.PARAM_PROP_USAGE]}")
+			usage['option'][option]=data[QiitaAPIMain.PARAM_PROP_USAGE]
+
+		QiitaAPIMain.show(usage)
 
 class ActionShowAll:
 	def action(self, parameter):
