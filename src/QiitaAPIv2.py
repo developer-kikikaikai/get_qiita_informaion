@@ -1,5 +1,5 @@
 #Qiita API v2対応
-import sys, json, requests
+import sys, json, requests, re
 from QiitaAPI import *
 
 class QiitaAPIv2(QiitaAPI):
@@ -23,9 +23,8 @@ class QiitaAPIv2(QiitaAPI):
 	#stockだけはstockersの要素数をカウントする
 	API_PROP_STOCK='stock'
 
-	#V2のアクセス仕様上限
-	API_PAGE_MAX=100
-	API_PAGE_ITEM_MAX=100
+	#1回の取得データ最大数の制限
+	DEFAULT_RESULT_MAX=5000
 
 	#内部で使うタグ
 	#conf設定。ここ以外の各要素はoutputに使うので、QiitaAPIと合わせる
@@ -54,8 +53,12 @@ class QiitaAPIv2(QiitaAPI):
 			self._headers['Authorization']=f'Bearer {token}'
 
 		#ユーザー名設定
-		if QiitaAPI.ITEM_USER in data:
-			self._user=data[QiitaAPI.ITEM_USER]
+		if QiitaAPI.COMMON_USER in data:
+			self._user=data[QiitaAPI.COMMON_USER]
+
+		#最大数設定
+		if QiitaAPI.COMMON_MAX in data:
+			self._result_max=data[QiitaAPI.COMMON_MAX]
 
 		#show関連のデータがないならデフォルトをそのまま使う
 		if not self.MNG_PROP_SHOW in data:
@@ -71,6 +74,8 @@ class QiitaAPIv2(QiitaAPI):
 	def _set_default(self):
 		#デフォルトを設定
 		self._headers={}
+		self._result_max=self.DEFAULT_RESULT_MAX
+
 		#item関連
 		self._item_config={
 				self.API_PROP_PAGE:1,
@@ -157,22 +162,76 @@ class QiitaAPIv2(QiitaAPI):
 	#get response body
 	def _get_api_response_body(self, extraurl):
 		res=self._callapi(extraurl)
-		#print(res.headers)
 		res_body=json.loads(res.text)
 		return res_body
 
 	#get response all
-	def _get_api_response_all(self, extraurl):
-		res=self._callapi(extraurl)
+	def _get_api_response_all(self, extraurl, has_baseurl):
+		if has_baseurl:
+			res=self._send_get_req(extraurl)
+		else:
+			res=self._callapi(extraurl)
 		res_all={self.HTTP_PROP_HEADER:res.headers}
 		res_all[self.HTTP_PROP_BODY]=json.loads(res.text)
 		return res_all
 
+	def _get_next_link(self, header):
+		#Linkタグがないならreturn
+		if not self.HTTP_PROP_LINK in header:
+			return ""
+
+		#format:
+		#{'Link': '<url>; rel="first",<url>; rel="prev" , <url>; rel="next", <url>; rel="last"'}
+		linklist=re.split(r',', header[self.HTTP_PROP_LINK])
+		#<url>; rel="xxx"で分割
+		for link_raw in linklist:
+			#無駄文字を削除後;で分割
+			link_split=re.split(r';', re.sub(r"[<>\" ]", "", link_raw))
+			# rel="next"を採用
+			if link_split[1] == 'rel=next':
+				return link_split[0]
+
+		#nextが無かった
+		return ""
+
+	#update response, parse header, and return next
+	def _update_response_and_get_next_link(self, url, response_all):
+		#responseを取得
+		response=self._get_api_response_all(url, True)
+
+		#最大数を超えてしまいそうならそこでstop
+		merged_count=len(response[self.HTTP_PROP_BODY])+len(response_all)
+		if self._result_max < merged_count:
+			return ""
+
+		#responseを追加。listなのでextendだけでOK
+		response_all.extend(response[self.HTTP_PROP_BODY])
+
+		#最大値に行ったら終了
+		if self._result_max == merged_count:
+			return ""
+		else:
+			#次のURLを返却
+			return self._get_next_link(response[self.HTTP_PROP_HEADER])
+
+	#get response with link 1st
+	def _get_api_response_with_link(self, extraurl, response):
+		next_url=self.BASEURL+extraurl
+		#nextがなくなるまでgetの繰り返し
+		while len(next_url) is not 0:
+			next_url=self._update_response_and_get_next_link(next_url, response)
+
+		return response
+
 	#qiita api call
 	def _callapi(self, extraurl):
 		url=self.BASEURL+extraurl
+		return self._send_get_req(url)
+
+	#get request direct
+	def _send_get_req(self, url):
 		try:
-			print(url)
+			#print(url)
 			res=requests.get(url, headers=self._headers)
 			#正しい結果か？
 			if not self._is_valid_response(res):
@@ -188,20 +247,27 @@ class QiitaAPIv2(QiitaAPI):
 	def _is_valid_response(self, res):
 		return res.status_code is 200
 
+	def _get_page_query(self):
+		return f'page={self._item_config[self.API_PROP_PAGE]}&per_page={self._item_config[self.API_PROP_PER_PAGE]}'
+
 	#get user raw result
 	def _get_user_items_by_api(self):
-		query=f'page={self._item_config[self.API_PROP_PAGE]}&per_page={self._item_config[self.API_PROP_PER_PAGE]}'
+		query=self._get_page_query()
 		if hasattr(self, '_user'): 
 			url=f'users/{self._user}/items?{query}'
 		else :
 			url=f'authenticated_user/items?{query}'
-		#view, likeはitemsの情報内から取得可能
-		return self._get_api_response_body(url)
+		#user itemsはlink系
+		response=[]
+		self._get_api_response_with_link(url, response)
+		return response
 
 	#get items raw result
 	def _get_items_by_api(self):
-		#view, likeはitemsの情報内から取得可能
-		return self._get_api_response_body('items')
+		query=self._get_page_query()
+		response=[]
+		self._get_api_response_with_link(f'items?{query}', response)
+		return response
 
 	#get_itemの生データ取得
 	def _get_item_by_api(self, item):
@@ -221,7 +287,7 @@ class QiitaAPIv2(QiitaAPI):
 		#stockはstockersから
 		#stockのqueryはユーザー情報に依存
 		query=f'page={self._user_config[self.API_PROP_PAGE]}&per_page={self._user_config[self.API_PROP_PER_PAGE]}'
-		res=self._get_api_response_all(f'items/{item}/stockers?${query}')
+		res=self._get_api_response_all(f'items/{item}/stockers?${query}', False)
 		return res[self.HTTP_PROP_HEADER][self.HTTP_PROP_COUNT]
 
 	def _get_extra_item_data(self, item_config, item):

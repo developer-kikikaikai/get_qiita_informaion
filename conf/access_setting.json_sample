@@ -5,6 +5,8 @@
 	"//data":"APIで使用するデータです。Version毎に必要なデータを定義します。",
 	"//user":"ユーザー情報。なしでもitemの取得は出来ます。",
 	"user":"developer-kikikaikai",
+	"//max":"取得数を制限したい場合に使用する。"
+	"max":10,
 	"data":{
 		"//access_token":"アクセストークンを設定します。Views情報や非公開記事情報が取得できるようになります。",
 		"access_token":"e0c2cd0ac64415dd736f46bac569915971081969",

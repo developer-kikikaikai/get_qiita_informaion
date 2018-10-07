@@ -15,6 +15,10 @@ class QiitaAPIGenerator:
 			#API IF側に渡すため、user情報もdataに詰める
 			if QiitaAPI.COMMON_USER in setting:
 				data[QiitaAPI.COMMON_USER]=setting[QiitaAPI.COMMON_USER]
+			#maxも同様
+			if QiitaAPI.COMMON_MAX in setting:
+				data[QiitaAPI.COMMON_MAX]=setting[QiitaAPI.COMMON_MAX]
+
 			self._qiita_api = self._generate_api(version, data)
 		except:
 			print("Failed to read conf file!")

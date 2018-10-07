@@ -24,6 +24,7 @@ class QiitaAPI(metaclass=ABCMeta):
 	COMMON_VERSION='api_ver'
 	COMMON_DATA='data'
 	COMMON_USER='user'
+	COMMON_MAX='max'
 	
 	def __init__(self, data):
 		#user dataがあるかどうかは覚えておく
