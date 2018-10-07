@@ -1,4 +1,4 @@
-## sample1. 指定ユーザー記事のMarkdown形式バックアップを取得
+## 指定ユーザー記事のMarkdown形式バックアップを取得
 
 ### 使い方:
 only_markdown.jsonファイル内のuserを自分のユーザーIDに書き換えて、backup.pyを実行してください。
