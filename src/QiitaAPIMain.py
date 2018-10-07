@@ -1,4 +1,5 @@
-import sys, json
+##Main API. command optionと同じ引数を渡してあげれば結果をdictで返す。
+import sys
 from QiitaAPIGenerator import QiitaAPIGenerator
 
 class QiitaAPIMain:
@@ -40,12 +41,9 @@ class QiitaAPIMain:
 						}
 		self._config=self._parse_arg(args)
 
+	#return dict
 	def action(self):
-		self._config[self.PARAM_PROP_ACTOR].action(self._config[self.CONF_PROP_PARAM])
-
-	@classmethod
-	def show(self, data):
-		print(json.dumps(data, ensure_ascii=False, indent=4))
+		return self._config[self.PARAM_PROP_ACTOR].action(self._config[self.CONF_PROP_PARAM])
 
 	def _parse_arg(self,args):
 		config={self.CONF_PROP_PARAM:{}}
@@ -54,7 +52,7 @@ class QiitaAPIMain:
 			key='other'
 		else:
 			#generatorの作成
-			config[self.CONF_PROP_PARAM][self.PARAM_PROP_GEN]=QiitaAPIGenerator(args[1]).get_qiita_api()
+			config[self.CONF_PROP_PARAM][self.PARAM_PROP_GEN]=QiitaAPIGenerator.get_qiita_api(args[1])
 			#confにuser情報があるか？
 
 			key=args[2]
@@ -79,28 +77,28 @@ class ActionShowUsage:
 		for option, data in parameter.items():
 			usage['option'][option]=data[QiitaAPIMain.PARAM_PROP_USAGE]
 
-		QiitaAPIMain.show(usage)
+		return usage
 
 class ActionShowAll:
 	def action(self, parameter):
 		api=parameter[QiitaAPIMain.PARAM_PROP_GEN]
 		if api.has_user():
-			QiitaAPIMain.show(api.get_user_items())
+			return api.get_user_items()
 		else:
-			QiitaAPIMain.show(api.get_items())
+			return api.get_items()
 
 class ActionShowUserItems:
 	def action(self, parameter):
-		QiitaAPIMain.show(parameter[QiitaAPIMain.PARAM_PROP_GEN].get_user_items())
+		return parameter[QiitaAPIMain.PARAM_PROP_GEN].get_user_items()
 
 class ActionShowItems:
 	def action(self, parameter):
-		QiitaAPIMain.show(parameter[QiitaAPIMain.PARAM_PROP_GEN].get_items())
+		return parameter[QiitaAPIMain.PARAM_PROP_GEN].get_items()
 
 class ActionShowItem:
 	def action(self, parameter):
 		#itemidがあるならそのitemのみ表示
-		#try:
-			QiitaAPIMain.show(parameter[QiitaAPIMain.PARAM_PROP_GEN].get_item(parameter[QiitaAPIMain.PARAM_PROP_ITEM]))
-		#except:
-		#	print("Please set valid item")
+		try:
+			return parameter[QiitaAPIMain.PARAM_PROP_GEN].get_item(parameter[QiitaAPIMain.PARAM_PROP_ITEM])
+		except:
+			return {'err':'Please set valid item'}
