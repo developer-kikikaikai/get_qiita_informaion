@@ -1,0 +1,14 @@
+{
+	"api_ver":2,
+	"max":1000,
+	"data":{
+		"//access_token":"access tocken指定の方が記事取得の制限が緩いので。自分のtokenを使ってください。",
+		"access_token":"aaaaaaaaaa",
+		"show":{
+			"item":{
+				"page":41,
+				"per_page":100
+			}
+		}
+	}
+}
