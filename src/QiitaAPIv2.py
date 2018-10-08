@@ -1,5 +1,8 @@
 #Qiita API v2対応
-import sys, json, requests, re
+import sys, json, requests, re, traceback, time
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import multiprocessing
+
 from QiitaAPI import *
 
 class QiitaAPIv2(QiitaAPI):
@@ -71,6 +74,13 @@ class QiitaAPIv2(QiitaAPI):
 
 		#user関連の設定更新
 		self._set_user_config(data[self.MNG_PROP_SHOW])
+
+		#lockクラス
+		self._once_item_lock=multiprocessing.Lock()
+		self._items_lock=multiprocessing.Lock()
+		self._err_lock=multiprocessing.Lock()
+		#state
+		self._err_state=False
 
 	#デフォルト設定を行う
 	def _set_default(self):
@@ -234,11 +244,29 @@ class QiitaAPIv2(QiitaAPI):
 	#get request direct
 	def _send_get_req(self, url):
 		try:
-			#print(url)
+			self._err_lock.acquire()
+			if self._err_state:
+				self._err_lock.release()
+				time.sleep(3)
+				self._send_get_req(url)
+			else:
+				self._err_lock.release()
+
+			print(url)
 			res=requests.get(url, headers=self._headers)
 			#正しい結果か？
 			if not self._is_valid_response(res):
+				self._err_lock.acquire()
+				self._err_state=True
+				self._err_lock.release()
+				if self._is_retry(res):
+					time.sleep(3)
+					res=requests.get(url, headers=self._headers)
+					if self._is_valid_response(res):
+						return res
 				sys.exit()
+			else:
+				self._err_state=False
 
 			return res
 		except:
@@ -248,7 +276,10 @@ class QiitaAPIv2(QiitaAPI):
 
 	#check response data
 	def _is_valid_response(self, res):
-		return res.status_code is 200
+		return res.status_code == 200
+
+	def _is_retry(self, res):
+		return res.status_code == 503
 
 	def _get_page_query(self):
 		return f'page={self._item_config[self.API_PROP_PAGE]}&per_page={self._item_config[self.API_PROP_PER_PAGE]}'
@@ -300,15 +331,27 @@ class QiitaAPIv2(QiitaAPI):
 		res=self._get_api_response_all(f'items/{item}/comments?${query}', False)
 		return res[self.HTTP_PROP_HEADER][self.HTTP_PROP_COUNT]
 
-	def _get_extra_item_data(self, item_config, item):
-		if item_config[self.MNG_PROP_API_PROP] == QiitaAPI.ITEM_VIEW:
-			return self._get_views(item)
-		elif item_config[self.MNG_PROP_API_PROP] == QiitaAPI.ITEM_STOCK:
-			return self._get_stock(item)
-		elif item_config[self.MNG_PROP_API_PROP] == QiitaAPI.ITEM_COMMENT:
-			return self._get_comment(item)
-		else:
-			return None
+	@staticmethod
+	def get_extra_item_data(this, item_config, item, result):
+		#waitlを入れる
+		usleep=lambda x: time.sleep(x/1000000.0)
+		usleep(100000)
+		try:
+			if item_config[this.MNG_PROP_API_PROP] == QiitaAPI.ITEM_VIEW:
+				http_result=this._get_views(item)
+			elif item_config[this.MNG_PROP_API_PROP] == QiitaAPI.ITEM_STOCK:
+				http_result=this._get_stock(item)
+			elif item_config[this.MNG_PROP_API_PROP] == QiitaAPI.ITEM_COMMENT:
+				http_result=this._get_comment(item)
+			else:
+				return None
+		except:
+			traceback.print_exc()
+
+		#lockしてからresultに値を追加
+		this._once_item_lock.acquire()
+		result[item_config[this.MNG_PROP_API_PROP]]=http_result
+		this._once_item_lock.release()	
 
 	def _parse_result(self, item_config, raw_result):
 		if item_config[self.MNG_PROP_API_PROP] == QiitaAPI.ITEM_USER:
@@ -322,7 +365,13 @@ class QiitaAPIv2(QiitaAPI):
 
 		return config[key][self.MNG_PROP_SHOW]
 
-	def _parse_raw_item(self, itemid, itemdetail):
+	@staticmethod
+	def get_extra_data_background(this, this_item_config, itemid, result):
+		return multiprocessing.Process(target=QiitaAPIv2.get_extra_item_data, args=(this, this_item_config, itemid, result))
+
+	@staticmethod
+	def parse_raw_item(self, itemid, itemdetail, response):
+
 		#stock情報を追加しておく
 		if self._item_config[self.CONF_PROP_ITEM][self.API_PROP_STOCK][self.MNG_PROP_SHOW]:
 			itemdetail[self.API_PROP_STOCK]=None
@@ -330,7 +379,10 @@ class QiitaAPIv2(QiitaAPI):
 		if self._item_config[self.CONF_PROP_ITEM][self.API_PROP_COMMENT][self.MNG_PROP_SHOW]:
 			itemdetail[self.API_PROP_COMMENT]=None
 
-		response={}
+		#subprocess用
+		response_subproc={}
+		#join用
+		sub_process=[]
 		for key, value in itemdetail.items():
 			#非表示データはスキップ
 			if not self._does_show_item(key, self._item_config[self.CONF_PROP_ITEM]):
@@ -344,9 +396,21 @@ class QiitaAPIv2(QiitaAPI):
 			else:
 				#Noneなら取り直し、それ以外はそのまま
 				if value == None:
-					response[this_item_config[self.MNG_PROP_API_PROP]]=self._get_extra_item_data(this_item_config, itemid)
+					#pid=QiitaAPIv2.get_extra_data_background(self, this_item_config, itemid, response_subproc);
+					QiitaAPIv2.get_extra_item_data(self, this_item_config, itemid, response_subproc);
+					#join用にprocessidを覚えてcall
+					#sub_process.append(pid)
+					#pid.run()
 				else:
 					response[this_item_config[self.MNG_PROP_API_PROP]]=value
+		#終了待ち
+		#for pid in sub_process:
+		#	if pid.is_alive():
+		#		pid.join()
+		#要素の追加
+		self._items_lock.acquire()
+		response.update(response_subproc)
+		self._items_lock.release()
 		return response
 
 	def _parse_raw_user(self, raw_data):
@@ -366,12 +430,18 @@ class QiitaAPIv2(QiitaAPI):
 		return response
 
 	#parse raw items
-	def _parse_raw_items(self, raw_data):
-		#データを加工して返却
-		response={}
-		for itemdetail in raw_data:
-			itemid=itemdetail[self.API_PROP_ITEMID]
-			response[itemid]=self._parse_raw_item(itemid, itemdetail)
+	@staticmethod
+	def parse_raw_items(this, raw_data, response):
+		response_subproc={}
+		sub_processes=[]
+
+		#データを加工して返却。やりすぎないようProcessPoolExecutorを使う
+		with ThreadPoolExecutor(max_workers=5) as executor:
+			for itemdetail in raw_data:
+				itemid=itemdetail[this.API_PROP_ITEMID]
+				response[itemid]={}
+				sub_processes = executor.submit(QiitaAPIv2.parse_raw_item ,this, itemid, itemdetail, response[itemid])
+
 		return response
 
 	#public
@@ -386,7 +456,9 @@ class QiitaAPIv2(QiitaAPI):
 			return raw_data
 		#データを加工して返却
 		else:
-			return self._parse_raw_items(raw_data)
+			response={}
+			QiitaAPIv2.parse_raw_items(self, raw_data, response)
+			return response
 
 	# アカウントの全情報を取得する
 	# @ret dict of {itemid:{'titlle', other(related to conf}}
@@ -398,7 +470,9 @@ class QiitaAPIv2(QiitaAPI):
 			return raw_data
 		#データを加工して返却
 		else:
-			return self._parse_raw_items(raw_data)
+			response={}
+			QiitaAPIv2.parse_raw_items(self, raw_data, response)
+			return response
 
 	# item情報を取得する
 	# @ret dict of {itemid:{'titlle', other(related to conf}
@@ -410,4 +484,6 @@ class QiitaAPIv2(QiitaAPI):
 			return raw_data
 		#データを加工して返却
 		else:
-			return self._parse_raw_item(item, raw_data)
+			response={}
+			self.parse_raw_item({'self':self, 'itemid':item, 'itemdetail':raw_data, 'response':response})
+			return response

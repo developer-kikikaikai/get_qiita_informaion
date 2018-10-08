@@ -1,9 +1,8 @@
 {
 	"api_ver":2,
-	"max":20,
 	"data":{
 		"//access_token":"自分のaccess_tokenを設定してください",
-		"access_token":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		"access_token":"aaaaaaaa",
 		"show":{
 			"item":{
 				"page":1,
@@ -14,6 +13,9 @@
 				"views":true,
 				"stock":true,
 				"comment":true
+			},
+			"user":{
+				"per_page":20
 			}
 		}
 	}
