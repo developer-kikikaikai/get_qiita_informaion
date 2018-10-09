@@ -1,32 +1,43 @@
+#直接APIを使いたい場合のGenerator
 import traceback, sys, json
 from QiitaAPINull import QiitaAPINull
 from QiitaAPIv2 import QiitaAPIv2
+from QiitaAPI import QiitaAPI
 
 class QiitaAPIGenerator:
-	#コンストラクタ。設定ファイルからversionとdata情報を読み込む
-	def __init__(self,confpath):
+	#public
+	#APIの取得
+	@classmethod
+	def get_qiita_api(self, confpath):
+		return self._generate_api(confpath)
+
+	#privateもどき。
+	#設定ファイルからversionとdata情報を読み込み、QiitaAPIを生成
+	@classmethod
+	def _generate_api(self, confpath):
 		try:
 			with open(confpath) as f:
 				setting = json.loads(f.read())
 			#confはjson形式。versionとversion依存のdataを取得する
-			self._version=setting['api_ver']
-			self._data=setting['data']
+			version=setting[QiitaAPI.COMMON_VERSION]
+			data=setting[QiitaAPI.COMMON_DATA]
+			#API IF側に渡すため、user情報もdataに詰める
+			if QiitaAPI.COMMON_USER in setting:
+				data[QiitaAPI.COMMON_USER]=setting[QiitaAPI.COMMON_USER]
+			#maxも同様
+			if QiitaAPI.COMMON_MAX in setting:
+				data[QiitaAPI.COMMON_MAX]=setting[QiitaAPI.COMMON_MAX]
+
+			return self._get_api_instance(version, data)
 		except:
+			print("Failed to read conf file!")
 			traceback.print_exc()
 			sys.exit()
 
-	#public
-	#APIの取得
-	def get_qiita_api(self):
-		#version情報から生成するinstanceを判断
-		if not hasattr(self, '_qiita_api'):
-			self._qiita_api = self._generate_api()
-		return self._qiita_api
-
-	#private
 	#APIのインスタンスを生成
-	def _generate_api(self):
-		if self._version == 2:
-			return QiitaAPIv2(self._data)
+	@classmethod
+	def _get_api_instance(self, version, data):
+		if version is 2:
+			return QiitaAPIv2(data)
 		else:
-			return QiitaAPINull(self._data)
+			return QiitaAPINull(data)

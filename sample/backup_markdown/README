@@ -1,0 +1,21 @@
+## 指定ユーザー記事のMarkdown形式バックアップを取得
+
+### 使い方:
+only_markdown.jsonファイル内のuserを自分のユーザーIDに書き換えて、backup.pyを実行してください。
+
+### 出力:
+以下ファイル名のファイルが出力されます。
+日本語タイトル(30文字、記号スキップ)_itemid.md
+
+### その他、必要環境
+
+python3以上 (3.6で動作確認)
+nltkモジュール
+
+Ubuntuでの環境インストール方法
+
+```
+sudo apt install python3
+sudo apt install python3-pip
+sudo pip3 install nltk
+```

@@ -1,8 +1,29 @@
 {
 	"api_ver":2,
+	"user":"developer-kikikaikai",
 	"data":{
-		"get_owndata":"yes",
-		"access_token":"PleaseWriteYourAccessToken",
-		"item_count":100
+		"access_token":"1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcd",
+		"show":{
+			"item":{
+				"page":1,
+				"per_page":100,
+				"url":true,
+				"markdown":false,
+				"html":false,
+				"tags":false,
+				"created_at":false,
+				"updated_at":true,
+				"like":true,
+				"views":true,
+				"stock":true,
+				"user":false
+			},
+			"user":{
+				"raw":false,
+				"page":1,
+				"per_page":100,
+				"id":true
+			}
+		}
 	}
 }

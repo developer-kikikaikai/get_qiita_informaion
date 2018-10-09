@@ -1,0 +1,15 @@
+{
+	"api_ver":2,
+	"//user":"自分のユーザーIDを設定してください",
+	"user":"developer-kikikaikai",
+	"data":{
+		"show":{
+			"item":{
+				"title":true,
+				"markdown":true,
+				"tags":false,
+				"like":false
+			}
+		}
+	}
+}

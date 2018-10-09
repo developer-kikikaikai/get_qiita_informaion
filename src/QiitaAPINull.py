@@ -1,16 +1,13 @@
-from QiitaAPI import QiitaAPI
+from QiitaAPI import *
 
 class QiitaAPINull(QiitaAPI):
 	def _parse_setting(self, data):
-		print("Version is not support!")
+		print("{'err':'This version is not support!'}")
 		return
-	def get_own_items(self):
-		return []
-	def get_own_all_datas(self):
+
+	def get_items(self):
 		return {}
-	def get_view(self, item):
-		return 0
-	def get_stock(self, item):
-		return 0
-	def get_like(self, item):
-		return 0
+	def get_user_items(self):
+		return {}
+	def get_item(self, item):
+		return {}
