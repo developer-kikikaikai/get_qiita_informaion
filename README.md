@@ -23,6 +23,9 @@ option:
 result=QiitaAPIMain(['dummy_data', 'conf_path', 'option', 'option2(あれば)']().action()
 ```
 
+※conf_pathはファイル名だけでなく、dict形式にロード済みのjsonデータも指定可能にしました。
+なので、pythonコード内で動的にパラメーター変更が可能になります。
+
 ### 設定値
 
 conf/access_setting.json_sampleを参照ください。

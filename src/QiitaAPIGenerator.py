@@ -16,8 +16,11 @@ class QiitaAPIGenerator:
 	@classmethod
 	def _generate_api(self, confpath):
 		try:
-			with open(confpath) as f:
-				setting = json.loads(f.read())
+			if type(confpath) == dict:#already parsed
+				setting=confpath
+			else:
+				with open(confpath) as f:
+					setting = json.loads(f.read())
 			#confはjson形式。versionとversion依存のdataを取得する
 			version=setting[QiitaAPI.COMMON_VERSION]
 			data=setting[QiitaAPI.COMMON_DATA]

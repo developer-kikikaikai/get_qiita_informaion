@@ -1,0 +1,35 @@
+## 並列処理での5000件の記事を一気に取得(confは1つ)
+
+### 使い方:
+各jsonのaccess_token部分
+"aaaaaaaaaa"
+を自分のものに変更後、parallel.pyを実行してください。
+
+変換例(Linux)
+
+```
+ls *.json | xargs sed -i "s/aaaaaaaaaa/write_your_access_token_here/g"
+```
+
+今回はitem, title, タグ, いいね数がファイルに出力されます。
+"xxx":true(views、ストック数、コメント数以外)を増やせば情報量ももっと増えます。
+
+### 出力:
+ファイルpage_{ページ番号}.txtに、1000, 2000, 3000, 4000, 5000番目の記事が出力されます。
+
+普通に準繰り取得していくよりも遥かに速いです。
+計測していないけど1分以上⇒12,3秒って感じでした。
+
+### その他
+
+confを沢山用意するのが面倒なので、parallel_processingのconfファイルを1つだけにして、dict指定も出来るようにしました。
+
+### 必要環境
+
+python3以上 (3.6で動作確認)
+
+Ubuntuでの環境インストール方法
+
+```
+sudo apt install python3
+```
